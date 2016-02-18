@@ -1,0 +1,2 @@
+language: bash
+script: ./check-fd 0

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+###############################################################################
+#                                   FUNCTIONS
+###############################################################################
+
+test_fd () {
+  local fd="$1"
+
+  if [[ -t "$fd" ]]; then
+    echo "tty"
+  elif [[ -p "/proc/self/fd/${fd}" ]]; then
+    echo "pipe"
+  elif [[ ! -t "$fd" && ! -p "/proc/self/fd/${fd}" ]]; then
+    echo "redirect"
+  fi
+}
+
+stat_fd () {
+  local fd="$1"
+  local type="$(stat --dereference --printf='%F' /proc/self/fd/${fd})"
+
+  if [[ $type == 'character special file' ]]; then
+    echo 'tty'
+  elif [[ $type == 'fifo' ]]; then
+    echo 'pipe'
+  else
+    echo "redirect"
+  fi
+}
+
+tty_fd () {
+  tty
+}
+
+all () {
+  local fd="$1"
+  printf '%4s : ' 'test'
+  test_fd "${fd}"
+
+  printf '%4s : ' 'stat'
+  stat_fd "${fd}"
+
+  printf '%4s : ' 'tty'
+  tty_fd
+}
+
+###############################################################################
+#                                     MAIN
+###############################################################################
+
+FD="$1"
+
+echo "==> [${FD}] / normal"
+all "${FD}"
+echo
+
+echo "==> [${FD}] / pipe"
+echo 'piped' | all "${FD}"
+echo
+
+echo "==> [${FD}] / redirect"
+all "${FD}" < check-fd
+echo
